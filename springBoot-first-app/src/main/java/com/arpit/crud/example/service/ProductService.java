@@ -47,6 +47,7 @@ public class ProductService {
 	}
 
 	public Product updateProductById(Product product) {
+		
 		Product exsistingProduct = productRepository.findById(product.getId()).orElse(null);
 		exsistingProduct.setName(product.getName());
 		exsistingProduct.setQuantity(product.getQuantity());

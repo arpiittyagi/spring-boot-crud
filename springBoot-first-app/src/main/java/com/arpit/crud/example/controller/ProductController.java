@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,16 +21,23 @@ import com.arpit.crud.example.service.ProductService;
 @RestController
 public class ProductController {
 
+	private static final String DELETE_MESSAGE = "Delete operation can not performed";
+	private static final String SAVE_FAILED_MESSAGE = "Save operation can not performed";
+	private static final String UPDATE_FAILED_MESSSAGE = "update operation can not performed";
+	private static final String READ_FAILED_MESSAGE = "Data retrieval failed";
+
 	@Autowired
 	private ProductService service;
 
 	@PostMapping("/addProduct")
 	public ResponseEntity<Product> addProduct(@RequestBody Product product) {
 
-		
-		return new ResponseEntity<>(service.saveProduct(product), HttpStatus.CREATED);
-			
-
+		Optional<Product> productOption = service.getProductByName(product.getName());
+		if (productOption.isPresent()) {
+			throw new ProductNotFoundException("product already exsist with the name " + product.getName());
+		} else {
+			return new ResponseEntity<>(service.saveProduct(product), HttpStatus.CREATED);
+		}
 	}
 
 	@PostMapping("/addProducts")
@@ -43,7 +51,7 @@ public class ProductController {
 		try {
 			return new ResponseEntity<>(service.getAllProducts(), HttpStatus.OK);
 		} catch (Exception ex) {
-			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+			throw new ProductNotFoundException(READ_FAILED_MESSAGE);
 		}
 
 	}
@@ -54,7 +62,8 @@ public class ProductController {
 		if (product.isPresent()) {
 			return new ResponseEntity<>(product.get(), HttpStatus.OK);
 		} else {
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+			throw new ProductNotFoundException(READ_FAILED_MESSAGE);
+
 		}
 
 	}
@@ -65,19 +74,30 @@ public class ProductController {
 		if (product.isPresent()) {
 			return new ResponseEntity<>(product.get(), HttpStatus.OK);
 		} else {
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+			throw new ProductNotFoundException(READ_FAILED_MESSAGE);
 		}
 	}
 
 	@PutMapping("/update")
 	public Product updateProduct(@RequestBody Product product) {
-		return service.updateProductById(product);
+		Optional<Product> optionalProduct = service.getProductById(product.getId());
+		if (optionalProduct.isPresent()) {
+			return service.updateProductById(product);
+		} else {
+			throw new ProductNotFoundException(UPDATE_FAILED_MESSSAGE);
+		}
 
 	}
 
 	@DeleteMapping("/delete/{id}")
 	public String deleteProduct(@PathVariable int id) {
-		return service.deleteProduct(id);
+		Optional<Product> product = service.getProductById(id);
+		if (product.isPresent()) {
+			return service.deleteProduct(id);
+		} else {
+			throw new ProductNotFoundException(DELETE_MESSAGE);
+
+		}
 
 	}
 
